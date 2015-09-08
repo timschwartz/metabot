@@ -13,3 +13,14 @@ Makefile.in
 /missing
 /stamp-h1
 /doc
+/Doxyfile
+/config.h.in~
+/src/*.o
+/src/.deps
+*.exe
+Makefile
+config.h
+config.log
+config.status
+doxyfile.stamp
+/src/metabot

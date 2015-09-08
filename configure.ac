@@ -12,6 +12,17 @@ AC_PROG_CXX
 AC_PROG_CC
 
 # Checks for libraries.
+AC_CHECK_HEADER([winsock2.h],
+    [AC_DEFINE([HAVE_LIBWS2_32], [1], [Define if libws2_32 exists.])
+     LIBS="-lws2_32 -lgdi32 -lwldap32 -lz $LIBS"],
+    [],
+    [#include <windows.h>])
+
+AC_CHECK_HEADER([json-c/json.h],
+    [AC_DEFINE([HAVE_LIBJSON_C], [1], [Define if libjson-c exists.])
+     LIBS="-ljson-c $LIBS"],
+    [],
+    [#include <json-c/json.h>])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h string.h sys/socket.h unistd.h])
