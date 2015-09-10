@@ -34,6 +34,9 @@ namespace metabot
         std::string owner;
         metabot::avatar avatar;
         std::string current_room;
+
+        /// Array containing janus server connections.
+        std::map<std::string, class net *> janus_servers;
     };
 }
 #endif

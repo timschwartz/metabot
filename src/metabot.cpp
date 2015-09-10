@@ -3,7 +3,9 @@
 #include <vector>
 #include <json-c/json.h>
 #include <json-c/json_object.h>
+#include <map>
 #include <metabot.h>
+#include <net.h>
 #include <bot.h>
 
 namespace metabot
@@ -67,5 +69,7 @@ int main(int argc, char *argv[])
 
     metabot::bot *Bot = new metabot::bot(argv[1]);
     
+    std::cout << "Server: " << Bot->server << ". Port: " << Bot->port << std::endl;
+    Bot->janus_servers[Bot->server] = new metabot::net(Bot->server, Bot->port, 0, true);
     return 0;
 }

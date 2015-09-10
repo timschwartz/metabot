@@ -3,7 +3,9 @@
 #include <vector>
 #include <json-c/json.h>
 #include <json-c/json_object.h>
+#include <map>
 #include <metabot.h>
+#include <net.h>
 #include <bot.h>
 
 namespace metabot
@@ -66,6 +68,8 @@ namespace metabot
         {
             throw "No avatar file specified in config file " + filename;
         }
+
+        std::cout << "Opening avatar file " << avatar_file_name << std::endl;
 
         std::fstream avatar_file;
         avatar_file.open(avatar_file_name, std::fstream::in | std::fstream::out);
