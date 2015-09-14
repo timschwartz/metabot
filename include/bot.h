@@ -25,6 +25,7 @@ namespace metabot
     {
       public:
         bot(std::string filename);
+        ~bot();
         void load(std::string filename);
 
         std::string server;

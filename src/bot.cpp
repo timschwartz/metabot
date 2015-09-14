@@ -12,17 +12,28 @@ namespace metabot
 {
     avatar::avatar() {}
 
+    bot::~bot()
+    {
+        std::cout << "Shutting down " << this->name << std::endl;
+        for(auto & n: this->janus_servers)
+        {
+            std::cout << "Closing connection to " << n.first << std::endl;
+            delete this->janus_servers[n.first];
+            this->janus_servers.erase(n.first);
+        }
+    }
+
     bot::bot(std::string filename)
     {
         std::cout << "Opening " << filename << std::endl;
-      try
-      {
-        this->load(filename);
-      } 
-      catch (std::string e) 
-      {
-          std::cout << e << std::endl;
-      }
+        try
+        {
+            this->load(filename);
+        } 
+        catch (std::string e) 
+        {
+            throw e;
+        }
     }
 
     void bot::load(std::string filename)

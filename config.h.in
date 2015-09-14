@@ -21,6 +21,9 @@
 /* Define if libws2_32 exists. */
 #undef HAVE_LIBWS2_32
 
+/* Use LUA */
+#undef HAVE_LUA
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 

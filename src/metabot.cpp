@@ -4,12 +4,20 @@
 #include <json-c/json.h>
 #include <json-c/json_object.h>
 #include <map>
+extern "C" {
+    #include <lua.h>
+    #include <lualib.h>
+    #include <lauxlib.h>
+}
 #include <metabot.h>
 #include <net.h>
 #include <bot.h>
 
 namespace metabot
 {
+    /// Array containing bots.
+    std::map<std::string, class bot *> bots;
+
     /** Splits a string by a character.
      *  @param [in] s The string to split.
      *  @param [in] c The character to split the string on.
@@ -56,20 +64,115 @@ namespace metabot
         if(!json_object_object_get_ex(json_command, "data", &temp)) throw  "No 'data' in command.\n" + command;
         return temp;
     }
+
+    namespace console
+    {
+        lua_State *L;
+        std::string selected_bot;
+        bool running = true;
+
+        void select(std::string name)
+        {
+            selected_bot = name;
+
+            std::cout << "'" << name << "' selected." << std::endl;
+        }
+
+        static int say(lua_State *L)
+        {   
+            std::string message = std::string(lua_tostring(L, -1));
+            std::cout << message << std::endl;
+            return 0;
+        }
+
+        static int openbot(lua_State *L)
+        {
+            metabot::bot *Bot;
+            std::string filename = std::string(lua_tostring(L, -1));
+            try
+            {
+              Bot = new metabot::bot(filename);
+            }
+            catch(std::string message)
+            {
+                std::cout << message << std::endl;
+                return 0;
+            }
+
+            metabot::bots[Bot->name] = Bot;
+            metabot::bots[Bot->name]->janus_servers[metabot::bots[Bot->name]->server] = new metabot::net(metabot::bots[Bot->name]->server, metabot::bots[Bot->name]->port, 0, true);
+            console::select(Bot->name);
+            return 0;
+        }
+
+        static int listbots(lua_State *L)
+        {
+            std::cout << "Loaded bots:" << std::endl;
+            for(auto & b: metabot::bots) std::cout << b.first << std::endl;
+            return 0;
+        }
+
+        static int selectbot(lua_State *L)
+        {
+            std::string name = std::string(lua_tostring(L, -1));
+            if(!metabot::bots[name])
+            {
+                std::cout << "'" << name << "' not loaded." << std::endl;
+                return 0;
+            }
+
+            console::select(name);
+            return 0;
+        }
+
+        static int killbot(lua_State *L)
+        {
+            if(!metabot::bots[selected_bot])
+            {
+                std::cout << "'" << selected_bot << "' not loaded." << std::endl;
+                return 0;
+            }
+
+            delete metabot::bots[selected_bot];
+            metabot::bots.erase(selected_bot);
+            selected_bot = "";
+            return 0;
+        }
+
+        static int quit(lua_State *L)
+        {
+            console::running = false;
+            return 0;
+        }
+
+        bool start(void)
+        {
+            std::string command;
+
+            L = lua_open();
+            luaL_openlibs(L);
+
+            lua_register(L, "say", say);
+            lua_register(L, "open", openbot);
+            lua_register(L, "list", listbots); 
+            lua_register(L, "select", selectbot);
+            lua_register(L, "kill", killbot);
+            lua_register(L, "quit", quit);
+
+            while(console::running)
+            {   
+                std::cout << "\n[" << selected_bot << "]> ";
+                std::getline(std::cin, command);
+                if(luaL_dostring(L, command.c_str()))
+                    std::cout << lua_tostring(L, -1) << std::endl;
+            }
+        }
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    if(argc < 2)
-    {
-        std::cout << "Usage:" << std::endl;
-        std::cout << argv[0] << " bot_name.bot" << std::endl;
-        return 1;
-    }
+    metabot::console::start();
 
-    metabot::bot *Bot = new metabot::bot(argv[1]);
-    
-    std::cout << "Server: " << Bot->server << ". Port: " << Bot->port << std::endl;
-    Bot->janus_servers[Bot->server] = new metabot::net(Bot->server, Bot->port, 0, true);
     return 0;
 }

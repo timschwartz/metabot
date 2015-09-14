@@ -104,6 +104,7 @@ namespace metabot
 
     net::~net()
     {
+        close(this->sock);
 #ifdef __WIN32__
         WSACleanup();
 #endif
