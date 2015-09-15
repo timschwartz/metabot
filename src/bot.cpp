@@ -4,6 +4,15 @@
 #include <json-c/json.h>
 #include <json-c/json_object.h>
 #include <map>
+#include <thread>
+#include <list>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+#include <openssl/x509_vfy.h>
+
 #include <metabot.h>
 #include <net.h>
 #include <bot.h>
@@ -18,9 +27,10 @@ namespace metabot
         for(auto & n: this->janus_servers)
         {
             std::cout << "Closing connection to " << n.first << std::endl;
+            this->janus_servers[n.first]->close();
             delete this->janus_servers[n.first];
-            this->janus_servers.erase(n.first);
         }
+        std::cout << "Bot destroyed" << std::endl;
     }
 
     bot::bot(std::string filename)
@@ -34,6 +44,8 @@ namespace metabot
         {
             throw e;
         }
+
+        this->janus_servers[this->server] = new metabot::net(this->server, this->port, 0, true);
     }
 
     void bot::load(std::string filename)
@@ -124,4 +136,25 @@ namespace metabot
 
         return;
     }
+
+    void bot::logon(std::string room)
+    {
+        json_object *jobj = json_object_new_object();
+        json_object *data = json_object_new_object();
+        std::string method = "logon";
+        std::string version = "metabot 0.1";
+
+        json_object_object_add(jobj, "method", json_object_new_string(method.c_str()));
+        json_object_object_add(data, "userId", json_object_new_string(this->name.c_str()));
+        if(this->password.size()) json_object_object_add(data, "password", json_object_new_string(this->password.c_str()));
+        json_object_object_add(data, "version", json_object_new_string(version.c_str()));
+        json_object_object_add(data, "roomId", json_object_new_string(room.c_str()));
+        json_object_object_add(jobj, "data", data);
+
+        this->janus_servers[this->server]->send(json_object_to_json_string(jobj));
+        json_object_put(jobj);
+        json_object_put(data);
+        return;
+    }
+
 }

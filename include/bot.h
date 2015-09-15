@@ -27,6 +27,7 @@ namespace metabot
         bot(std::string filename);
         ~bot();
         void load(std::string filename);
+        void logon(std::string room);
 
         std::string server;
         int port;

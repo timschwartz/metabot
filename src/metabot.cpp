@@ -9,6 +9,15 @@ extern "C" {
     #include <lualib.h>
     #include <lauxlib.h>
 }
+#include <thread>
+#include <list>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+#include <openssl/x509_vfy.h>
+
 #include <metabot.h>
 #include <net.h>
 #include <bot.h>
@@ -100,9 +109,14 @@ namespace metabot
             }
 
             metabot::bots[Bot->name] = Bot;
-            metabot::bots[Bot->name]->janus_servers[metabot::bots[Bot->name]->server] = new metabot::net(metabot::bots[Bot->name]->server, metabot::bots[Bot->name]->port, 0, true);
             console::select(Bot->name);
             return 0;
+        }
+
+        static int logon(lua_State *L)
+        {
+            std::string room = std::string(lua_tostring(L, -1));
+            metabot::bots[console::selected_bot]->logon(room);
         }
 
         static int listbots(lua_State *L)
@@ -135,7 +149,7 @@ namespace metabot
 
             delete metabot::bots[selected_bot];
             metabot::bots.erase(selected_bot);
-            selected_bot = "";
+            selected_bot = "-";
             return 0;
         }
 
@@ -158,13 +172,17 @@ namespace metabot
             lua_register(L, "select", selectbot);
             lua_register(L, "kill", killbot);
             lua_register(L, "quit", quit);
+            lua_register(L, "logon", logon);
 
             while(console::running)
             {   
                 std::cout << "\n[" << selected_bot << "]> ";
                 std::getline(std::cin, command);
                 if(luaL_dostring(L, command.c_str()))
+                {
+                    std::cout << "lua error" << std::endl;
                     std::cout << lua_tostring(L, -1) << std::endl;
+                }
             }
         }
     }

@@ -24,12 +24,14 @@ AC_CHECK_HEADER([json-c/json.h],
     [],
     [#include <json-c/json.h>])
 
-PKG_CHECK_MODULES([LUA], [lua5.1],
+PKG_CHECK_MODULES([LUA], [lua],
    [AC_DEFINE([HAVE_LUA], [1], [Use LUA])],
    [PKG_CHECK_MODULES([LUA], [lua-5.1],
        [AC_DEFINE([HAVE_LUA], [1], [Use LUA])
     ])
 ])
+
+PKG_CHECK_MODULES([SSL], openssl)
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h string.h sys/socket.h unistd.h])
