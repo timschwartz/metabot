@@ -25,6 +25,7 @@
 #include <thread>
 #include <vector>
 #include <list>
+#include <map>
 
 #include <metabot.h>
 #include <net.h>

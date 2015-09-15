@@ -12,7 +12,10 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
+#include <unistd.h>
 
+#include <config.h>
+#include <md5.h>
 #include <metabot.h>
 #include <net.h>
 #include <bot.h>
@@ -20,6 +23,145 @@
 namespace metabot
 {
     avatar::avatar() {}
+
+    void output(std::string text)
+    {
+        std::string color;
+        time_t rawtime;
+        struct tm * timeinfo;
+        char buffer[4096];
+
+        time(&rawtime);
+        timeinfo = localtime(&rawtime);
+
+        color = "\033[1;30m";
+        if(text[0] == ':') color = "\033[1;31m";
+        if(text[0] == '|') color = "\033[1;34m";
+        strftime(buffer, 4095, "%F %T", timeinfo);
+
+        std::cout << buffer << " " << color << text << "\033[0m" <<std::endl;
+    }
+
+    namespace janusvr_server
+    {
+        void user_moved(bot *b, std::string command)
+        {
+
+        }
+
+        void user_chat(bot *b, std::string command)
+        {
+            std::string data, userId, toUserId, roomId, message;
+            json_object *json_data, *temp;
+            json_data = get_json_data(command);
+
+            data = json_object_get_string(json_data);
+            if(!json_object_object_get_ex(json_data, "userId", &temp)) return;
+            userId = json_object_get_string(temp);
+
+            if(json_object_object_get_ex(json_data, "roomId", &temp))
+                roomId = json_object_get_string(temp);
+
+            if(json_object_object_get_ex(json_data, "toUserId", &temp))
+                toUserId = json_object_get_string(temp);
+
+            if(!json_object_object_get_ex(json_data, "message", &temp)) return;
+            message = json_object_get_string(temp);
+
+            json_object_put(json_data);
+            json_object_put(temp);
+
+            if(toUserId.size()) output("| " + userId + "> " + message);
+            else output(userId + "> " + message);
+        }
+
+        void okay(bot *b, std::string command)
+        {
+            output(":Okay");
+        }
+
+        void user_disconnected(bot *p, std::string command)
+        {
+            std::string data;
+            json_object *json_data, *temp;
+
+            json_data = get_json_data(command);
+            if(!json_object_object_get_ex(json_data, "userId", &temp)) return;
+
+            data = json_object_get_string(temp);
+            json_object_put(json_data);
+            json_object_put(temp);
+            output(":"+data+" disconnected.");
+        }
+
+        void user_enter(bot *p, std::string command)
+        {
+            std::string data;
+            json_object *json_data, *temp;
+
+            json_data = get_json_data(command);
+            if(!json_object_object_get_ex(json_data, "userId", &temp)) return;
+
+            data = json_object_get_string(temp);
+            json_object_put(json_data);
+            json_object_put(temp);
+            output(":"+data+" entered the room.");
+        }
+
+        void user_leave(bot *p, std::string command)
+        {
+            std::string data;
+            json_object *json_data, *temp;
+
+            json_data = get_json_data(command);
+            if(!json_object_object_get_ex(json_data, "userId", &temp)) return;
+
+            data = json_object_get_string(temp);
+            json_object_put(json_data);
+            json_object_put(temp);
+            output(":"+data+" left the room.");
+        }
+
+        void error(bot *b, std::string command)
+        {
+            output(command);
+        }
+
+        void users_online(bot *b, std::string command)
+        {
+            json_object *json_data, *temp;
+
+            json_data = get_json_data(command);
+            std::cout << json_object_get_string(json_data) << std::endl;
+
+            json_object_put(json_data);
+        }
+
+        void user_portal(bot *b, std::string command)
+        {
+            std::string userId;
+            std::string url;
+            std::string roomId;
+            json_object *json_data, *temp;
+
+            json_data = get_json_data(command);
+
+            if(!json_object_object_get_ex(json_data, "url", &temp)) return;
+            url = json_object_get_string(temp);
+
+            if(!json_object_object_get_ex(json_data, "userId", &temp)) return;
+            userId = json_object_get_string(temp);
+
+            if(!json_object_object_get_ex(json_data, "roomId", &temp)) return;
+            roomId = json_object_get_string(temp);
+
+            json_object_put(json_data);
+            json_object_put(temp);
+
+            output(":"+userId+" created a portal ("+md5(url)+") to "+url+".");
+        }
+
+    }
 
     bot::~bot()
     {
@@ -45,7 +187,49 @@ namespace metabot
             throw e;
         }
 
+        this->quit = false;
         this->janus_servers[this->server] = new metabot::net(this->server, this->port, 0, true);
+        this->bot_thread = std::thread(&bot::thread, this);
+        this->bot_thread.detach();
+        this->logon(md5(this->current_room));
+    }
+
+    void bot::thread()
+    {
+        std::string message;
+
+        while(!this->quit)
+        {
+            message = this->janus_servers[this->server]->read();
+            if(message.size())
+            {
+                json_object *json_command = NULL, *temp = NULL;
+                json_command = json_tokener_parse(message.c_str());
+
+                std::string method;
+
+                try
+                {
+                    if(!json_object_object_get_ex(json_command, "method", &temp))  throw "'method' not found in command: " + message;
+                }
+                catch(std::string e)
+                {
+                    output(e);
+                    json_object_put(json_command);
+                    json_object_put(temp);
+                    return;
+                }
+                method = json_object_get_string(temp);
+
+                json_object_put(json_command);
+                json_object_put(temp);
+
+                if(this->server_method[method] != NULL) (this->server_method[method])(this, message);
+                else output("Unknown method " + method);
+            }
+
+            usleep(200);
+        }
     }
 
     void bot::load(std::string filename)
@@ -134,6 +318,15 @@ namespace metabot
 
         std::cout << "Bot '" << this->name << "' loaded." << std::endl;
 
+        this->server_method.insert(std::make_pair("user_moved", &janusvr_server::user_moved));
+        this->server_method.insert(std::make_pair("user_chat", &janusvr_server::user_chat));
+        this->server_method.insert(std::make_pair("okay", &janusvr_server::okay));
+        this->server_method.insert(std::make_pair("user_disconnected", &janusvr_server::user_disconnected));
+        this->server_method.insert(std::make_pair("user_enter", &janusvr_server::user_enter));
+        this->server_method.insert(std::make_pair("user_leave", &janusvr_server::user_leave));
+        this->server_method.insert(std::make_pair("error", &janusvr_server::error));
+        this->server_method.insert(std::make_pair("users_online", &janusvr_server::users_online));
+        this->server_method.insert(std::make_pair("user_portal", &janusvr_server::user_portal));
         return;
     }
 
@@ -142,7 +335,7 @@ namespace metabot
         json_object *jobj = json_object_new_object();
         json_object *data = json_object_new_object();
         std::string method = "logon";
-        std::string version = "metabot 0.1";
+        std::string version = PACKAGE_STRING;
 
         json_object_object_add(jobj, "method", json_object_new_string(method.c_str()));
         json_object_object_add(data, "userId", json_object_new_string(this->name.c_str()));
@@ -157,4 +350,22 @@ namespace metabot
         return;
     }
 
+    void bot::chat(std::string toUserId, std::string message)
+    {
+        json_object *jobj = json_object_new_object();
+        json_object *data = json_object_new_object();
+        std::string method = "chat";
+
+        json_object_object_add(jobj, "method", json_object_new_string(method.c_str()));
+        json_object_object_add(data, "message", json_object_new_string(message.c_str()));
+
+        if(toUserId.size()) json_object_object_add(data, "toUserId", json_object_new_string(toUserId.c_str()));
+
+        json_object_object_add(jobj, "data", data);
+
+        this->janus_servers[this->server]->send(json_object_to_json_string(jobj));
+
+        output(this->name + "> " + message);
+        return;
+    }
 }

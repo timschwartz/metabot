@@ -26,8 +26,10 @@ namespace metabot
       public:
         bot(std::string filename);
         ~bot();
+        void thread();
         void load(std::string filename);
         void logon(std::string room);
+        void chat(std::string toUserId, std::string message);
 
         std::string server;
         int port;
@@ -36,9 +38,13 @@ namespace metabot
         std::string owner;
         metabot::avatar avatar;
         std::string current_room;
+        bool quit;
+        std::thread bot_thread;
 
         /// Array containing janus server connections.
         std::map<std::string, class net *> janus_servers;
+
+        script_map server_method;
     };
 }
 #endif

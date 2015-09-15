@@ -18,6 +18,7 @@ extern "C" {
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 
+#include <md5.h>
 #include <metabot.h>
 #include <net.h>
 #include <bot.h>
@@ -90,7 +91,7 @@ namespace metabot
         static int say(lua_State *L)
         {   
             std::string message = std::string(lua_tostring(L, -1));
-            std::cout << message << std::endl;
+            metabot::bots[console::selected_bot]->chat("", message);
             return 0;
         }
 
@@ -116,7 +117,7 @@ namespace metabot
         static int logon(lua_State *L)
         {
             std::string room = std::string(lua_tostring(L, -1));
-            metabot::bots[console::selected_bot]->logon(room);
+            metabot::bots[console::selected_bot]->logon(md5(room));
         }
 
         static int listbots(lua_State *L)
@@ -146,6 +147,8 @@ namespace metabot
                 std::cout << "'" << selected_bot << "' not loaded." << std::endl;
                 return 0;
             }
+
+            metabot::bots[selected_bot]->quit = true;
 
             delete metabot::bots[selected_bot];
             metabot::bots.erase(selected_bot);
