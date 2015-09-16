@@ -28,6 +28,16 @@ namespace metabot
     /// Array containing bots.
     std::map<std::string, class bot *> bots;
 
+    bool replace(std::string& str, const std::string& from, const std::string& to) 
+    {
+        size_t start_pos = str.find(from);
+        if(start_pos == std::string::npos)
+            return false;
+        str.replace(start_pos, from.length(), to);
+        return true;
+    }
+
+
     /** Splits a string by a character.
      *  @param [in] s The string to split.
      *  @param [in] c The character to split the string on.

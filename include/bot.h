@@ -27,6 +27,8 @@ namespace metabot
         bot(std::string filename);
         ~bot();
         void thread();
+        void update_pos();
+        void update_avatar();
         void load(std::string filename);
         void logon(std::string room);
         void chat(std::string toUserId, std::string message);
@@ -36,6 +38,7 @@ namespace metabot
         std::string name;
         std::string password;
         std::string owner;
+        std::string follow;
         metabot::avatar avatar;
         std::string current_room;
         bool quit;
@@ -43,6 +46,8 @@ namespace metabot
 
         /// Array containing janus server connections.
         std::map<std::string, class net *> janus_servers;
+
+        std::map<std::string, class avatar *> players;
 
         script_map server_method;
     };

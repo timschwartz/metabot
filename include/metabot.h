@@ -10,5 +10,6 @@ namespace metabot
     json_object *get_json_data(std::string command);
     typedef void (*ScriptFunction)(bot *b, std::string); // function pointer type
     typedef std::map<std::string, ScriptFunction> script_map;
+    bool replace(std::string& str, const std::string& from, const std::string& to); 
 }
 #endif

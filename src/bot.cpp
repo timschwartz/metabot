@@ -13,6 +13,7 @@
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 #include <unistd.h>
+#include <cmath>
 
 #include <config.h>
 #include <md5.h>
@@ -46,7 +47,54 @@ namespace metabot
     {
         void user_moved(bot *b, std::string command)
         {
+            std::string pos_string, dir_string;
+            std::string userId;
+            float x, y , z, d;
 
+            json_object *json_command, *temp, *temp2, *temp3;
+            json_command = json_tokener_parse(command.c_str());
+            if(!json_object_object_get_ex(json_command, "data", &temp)) output("No data!\n" + command);
+
+            if(!json_object_object_get_ex(temp, "userId", &temp2))  output("No userId\n" + command);
+            userId = json_object_get_string(temp2);
+
+            if(!json_object_object_get_ex(temp, "position", &temp2))  output("No position\n" + command);
+
+            if(!json_object_object_get_ex(temp2, "pos", &temp3))  output("No pos\n" + command);
+            pos_string = json_object_get_string(temp3);
+
+            if(!json_object_object_get_ex(temp2, "dir", &temp3))  output("No dir\n" + command);
+            dir_string = json_object_get_string(temp3);
+
+            if(b->players[userId] == NULL)
+            {
+                metabot::avatar *new_av = new metabot::avatar();
+                b->players[userId] = new_av;
+                b->players[userId]->userId = userId;
+            }
+
+            b->players[userId]->pos = metabot::stofv(pos_string);
+            b->players[userId]->dir = metabot::stofv(dir_string);
+            b->players[userId]->last_update = time(0);
+
+            if(userId != b->owner)
+            {
+                x = b->players[userId]->pos[0] - b->avatar.pos[0];
+                y = b->players[userId]->pos[1] - b->avatar.pos[1];
+                z = b->players[userId]->pos[2] - b->avatar.pos[2];
+
+                d = sqrt((x*x) + (y*y) + (z*z));
+                if(d < 2)
+                {
+                    b->avatar.pos[0] -= x;
+                    b->avatar.pos[2] -= z;
+                }
+            }
+
+            json_object_put(json_command);
+            json_object_put(temp);
+            json_object_put(temp2);
+            json_object_put(temp3);
         }
 
         void user_chat(bot *b, std::string command)
@@ -228,6 +276,7 @@ namespace metabot
                 else output("Unknown method " + method);
             }
 
+            this->update_pos();
             usleep(200);
         }
     }
@@ -292,6 +341,8 @@ namespace metabot
         avatar_file.read(&this->avatar.avatar_template[0], this->avatar.avatar_template.size());
         avatar_file.close();
 
+        this->update_avatar();
+
         if(!json_object_object_get_ex(bot_data, "position", &temp)) throw "position not found in config file " + filename;
 
         if(!json_object_object_get_ex(temp, "pos", &temp2)) throw "pos not found in config file " + filename;
@@ -330,6 +381,49 @@ namespace metabot
         return;
     }
 
+    void bot::update_pos()
+    {
+        float x, y, z;
+        json_object *jobj = json_object_new_object();
+        json_object *data = json_object_new_object();
+        std::string method = "move";
+ 
+        if(this->follow.size() && this->players[this->follow] != NULL)
+        {
+            this->avatar.pos = this->players[this->follow]->pos;
+            this->avatar.pos[0] +=2;
+            x = this->avatar.pos[0] - this->players[this->follow]->pos[0];
+            y = this->avatar.pos[1] - this->players[this->follow]->pos[1];
+            z = this->avatar.pos[2] - this->players[this->follow]->pos[2];
+            this->avatar.dir[0] = -x; // this->players[this->follow]->dir;
+            this->avatar.dir[1] = y;
+            this->avatar.dir[2] = z;
+        }
+
+        json_object_object_add(jobj, "method", json_object_new_string(method.c_str()));
+        json_object_object_add(data, "pos", json_object_new_string(implode(this->avatar.pos, ' ').c_str()));
+        json_object_object_add(data, "dir", json_object_new_string(implode(this->avatar.dir, ' ').c_str()));
+        json_object_object_add(data, "view_dir", json_object_new_string(implode(this->avatar.view_dir, ' ').c_str()));
+        json_object_object_add(data, "up_dir", json_object_new_string(implode(this->avatar.up_dir, ' ').c_str()));
+        json_object_object_add(data, "head_pos", json_object_new_string(implode(this->avatar.head_pos, ' ').c_str()));
+
+        json_object_object_add(data, "avatar", json_object_new_string(this->avatar.avatar_file.c_str()));
+        json_object_object_add(jobj, "data", data);
+
+        std::string command = json_object_to_json_string(jobj);
+        // std::cout << command << std::endl;
+        this->janus_servers[this->server]->send(command);
+        json_object_put(jobj);
+        json_object_put(data);
+        return;
+    }
+
+    void bot::update_avatar()
+    {
+        this->avatar.avatar_file = this->avatar.avatar_template;
+        metabot::replace(this->avatar.avatar_file, "BOTNAME", this->name);
+    }
+ 
     void bot::logon(std::string room)
     {
         json_object *jobj = json_object_new_object();
