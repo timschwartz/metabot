@@ -4,27 +4,37 @@ Virtual Reality bot with scripting.
 ## Commands
 
 ### open
-```open("/home/user/MyBot.bot")```
+```
+open('/home/user/MyBot.bot')
+```
 
 Loads bot configuration file, connects to specified server, joins specified room.
 
 ### list
-```list()```
+```
+list()
+```
 
 Lists currently running bots.
 
 ### select
-```select("MyBot2")```
+```
+select("MyBot2")
+```
 
 Selects the bot you want to interact with for other commands (say, kill, etc.)
 
 ### say
-```say("Hello")```
+```
+say("Hello")
+```
 
 Sends a chat message through the currently selected bot.
 
 ### kill
-```kill()```
+```
+kill()
+```
 
 Shuts down and unloads currently seleted bot
 
