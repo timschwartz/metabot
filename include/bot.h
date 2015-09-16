@@ -32,6 +32,7 @@ namespace metabot
         void load(std::string filename);
         void logon(std::string room);
         void chat(std::string toUserId, std::string message);
+        void users_online(int results, std::string roomId);
 
         std::string server;
         int port;

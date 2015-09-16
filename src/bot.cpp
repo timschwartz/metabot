@@ -166,7 +166,7 @@ namespace metabot
             json_object *json_data, *temp;
 
             json_data = get_json_data(command);
-            std::cout << json_object_get_string(json_data) << std::endl;
+            output(json_object_get_string(json_data));
 
             json_object_put(json_data);
         }
@@ -211,6 +211,7 @@ namespace metabot
 
     bot::bot(std::string filename)
     {
+        bool encrypted = true;
         std::cout << "Opening " << filename << std::endl;
         try
         {
@@ -221,8 +222,9 @@ namespace metabot
             throw e;
         }
 
+        if(this->port != 5567) encrypted = false;
         this->quit = false;
-        this->janus_servers[this->server] = new metabot::net(this->server, this->port, 0, true);
+        this->janus_servers[this->server] = new metabot::net(this->server, this->port, 0, encrypted);
         this->bot_thread = std::thread(&bot::thread, this);
         this->bot_thread.detach();
         this->logon(md5(this->current_room));
@@ -409,6 +411,25 @@ namespace metabot
         this->avatar.avatar_file = this->avatar.avatar_template;
         metabot::replace(this->avatar.avatar_file, "BOTNAME", this->name);
     }
+
+    void bot::users_online(int results, std::string roomId)
+    {
+        json_object *jobj = json_object_new_object();
+        json_object *data = json_object_new_object();
+        std::string method = "users_online";
+
+        json_object_object_add(jobj, "method", json_object_new_string(method.c_str()));
+        if(results > 0) json_object_object_add(data, "maxResults", json_object_new_int(results));
+        if(roomId.size()) json_object_object_add(data, "roomId", json_object_new_string(roomId.c_str()));
+        json_object_object_add(jobj, "data", data);
+
+        this->janus_servers[this->server]->send(json_object_to_json_string(jobj));
+        output(json_object_to_json_string(jobj));
+        json_object_put(jobj);
+        json_object_put(data);
+        return;
+    }
+
  
     void bot::logon(std::string room)
     {
