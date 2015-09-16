@@ -77,20 +77,6 @@ namespace metabot
             b->players[userId]->dir = metabot::stofv(dir_string);
             b->players[userId]->last_update = time(0);
 
-            if(userId != b->owner)
-            {
-                x = b->players[userId]->pos[0] - b->avatar.pos[0];
-                y = b->players[userId]->pos[1] - b->avatar.pos[1];
-                z = b->players[userId]->pos[2] - b->avatar.pos[2];
-
-                d = sqrt((x*x) + (y*y) + (z*z));
-                if(d < 2)
-                {
-                    b->avatar.pos[0] -= x;
-                    b->avatar.pos[2] -= z;
-                }
-            }
-
             json_object_put(json_command);
             json_object_put(temp);
             json_object_put(temp2);
