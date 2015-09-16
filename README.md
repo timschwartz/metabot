@@ -1,6 +1,22 @@
 # metabot
 Virtual Reality bot with scripting.
 
+## Building
+
+### Libraries
+
+You will need openssl, lua5.1, and json-c development libraries installed.
+
+### Compiling
+```
+automake --add-missing
+autoreconf
+./configure
+make
+```
+
+Will produce the binary **src/metabot**
+
 ## Commands
 
 ### open
