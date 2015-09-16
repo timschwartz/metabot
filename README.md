@@ -9,8 +9,8 @@ You will need openssl, lua5.1, and json-c development libraries installed.
 
 ### Compiling
 ```
-automake --add-missing
 autoreconf
+automake --add-missing
 ./configure
 make
 ```
