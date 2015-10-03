@@ -24,9 +24,9 @@ AC_CHECK_HEADER([json-c/json.h],
     [],
     [#include <json-c/json.h>])
 
-PKG_CHECK_MODULES([LUA], [lua],
+PKG_CHECK_MODULES([LUA], [lua-5.1],
    [AC_DEFINE([HAVE_LUA], [1], [Use LUA])],
-   [PKG_CHECK_MODULES([LUA], [lua-5.1],
+   [PKG_CHECK_MODULES([LUA], [lua],
        [AC_DEFINE([HAVE_LUA], [1], [Use LUA])
     ])
 ])

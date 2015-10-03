@@ -6,9 +6,15 @@
 #include <json-c/json_object.h>
 #include <map>
 extern "C" {
+#ifdef __APPLE__
+    #include <lua-5.1/lua.h>
+    #include <lua-5.1/lualib.h>
+    #include <lua-5.1/lauxlib.h>
+#else
     #include <lua.h>
     #include <lualib.h>
     #include <lauxlib.h>
+#endif
 }
 
 #ifdef WIN32
