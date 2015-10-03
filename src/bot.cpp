@@ -15,6 +15,11 @@
 #include <unistd.h>
 #include <cmath>
 
+#ifdef __WIN32__
+  #define NOCRYPT
+  #include <mingw.thread.h>
+#endif
+
 #include <config.h>
 #include <md5.h>
 #include <metabot.h>

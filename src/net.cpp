@@ -7,8 +7,10 @@
 #include <json-c/json.h>
 #include <json-c/json_object.h>
 #ifdef __WIN32__
+  #define NOCRYPT
   #include <winsock2.h>
   #include <ws2tcpip.h>
+  #include <mingw.thread.h>
 #else
   #include <sys/socket.h>
   #include <netinet/in.h>
@@ -22,6 +24,7 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
+
 #include <thread>
 #include <vector>
 #include <list>

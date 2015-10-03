@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <json-c/json.h>
 #include <json-c/json_object.h>
@@ -9,6 +10,12 @@ extern "C" {
     #include <lualib.h>
     #include <lauxlib.h>
 }
+
+#ifdef WIN32
+#include <mingw.thread.h>
+#endif
+
+#include <cstdlib>
 #include <thread>
 #include <list>
 #include <openssl/bio.h>
@@ -58,12 +65,19 @@ namespace metabot
             return v;
     }
 
+    template <typename T> std::string to_string(T val)
+    {
+        std::stringstream stream;
+        stream << val;
+        return stream.str();
+    }
+
     std::string implode(std::vector<float> data, char c)
     {
         std::string temp;
         for(auto n:data)
         {
-            temp += std::to_string(n) + c;
+            temp += metabot::to_string(n) + c;
         }
         return temp;
     }
@@ -73,7 +87,7 @@ namespace metabot
         std::vector<float> coords;
 
         std::vector<std::string> x = explode(data, ' ');
-        for(auto n:x)  coords.push_back(std::stof(n, NULL));
+        for(auto n:x)  coords.push_back(stof(n, NULL));
         return coords;
     }
 
