@@ -17,7 +17,7 @@ extern "C" {
 #endif
 }
 
-#ifdef WIN32
+#ifdef __WIN32__
 #include <mingw.thread.h>
 #endif
 
