@@ -270,7 +270,7 @@ namespace metabot
             }
 
             this->update_pos();
-            usleep(200);
+            usleep(200000);
         }
     }
 
